@@ -44,21 +44,21 @@ function writeClonesIntoDatabase(
   console.log("Generating database file...");
   try {
     Deno.removeSync(`${outputPath}/clones.db`);
-  } catch (error) {}
+  } catch (error) { }
   const db = new DB(`${outputPath}/clones.db`);
   db.query(
     "CREATE TABLE IF NOT EXISTS clones (" +
-      "globalId INTEGER, " +
-      "revision INTEGER, " +
-      "pcId INTEGER, " +
-      "classId INTEGER, " +
-      "startLine INTEGER, " +
-      "endLine INTEGER, " +
-      "additionCount INTEGER, " +
-      "deletionCount INTEGER, " +
-      "filePath TEXT, " +
-      "PRIMARY KEY(globalId, revision)" +
-      ")",
+    "globalId INTEGER, " +
+    "revision INTEGER, " +
+    "pcId INTEGER, " +
+    "classId INTEGER, " +
+    "startLine INTEGER, " +
+    "endLine INTEGER, " +
+    "additionCount INTEGER, " +
+    "deletionCount INTEGER, " +
+    "filePath TEXT, " +
+    "PRIMARY KEY(globalId, revision)" +
+    ")",
   );
   for (
     const [globalId, revisionAndCloneFragmentDict] of Object.entries(
@@ -121,7 +121,7 @@ function obtainCloneGlobalIdAndRevisionsDict(
         const changeLogsForFileContainingCurrentCloneFragment = changeLogs
           .filter((changeLog) =>
             changeLog[0] ===
-              cloneFragment.filePath.substring(`${basePath}/`.length)
+            cloneFragment.filePath.substring(`${basePath}/`.length)
           );
 
         const cloneClassIdAndFragmentsDictForLastRevision =
@@ -167,6 +167,7 @@ function findMatchedCloneFragmentInLastRevision(
 
   for (const cloneFragmentForLastRevison of cloneFragmentsInLastRevision) {
     if (
+      cloneFragment.filePath === cloneFragmentForLastRevison.filePath &&
       adjustedStartLine <= cloneFragmentForLastRevison.endLine &&
       cloneFragmentForLastRevison.startLine <= adjustedEndLine
     ) {
