@@ -1,6 +1,6 @@
 import { copySync } from "https://deno.land/std@v0.52.0/fs/copy.ts";
 import { isFileOrDirectoryExisting } from "./is-file-or-directory-existing.ts";
-import { formatGitDiff } from "./format-git-diff.ts";
+import { generateChangeLogs } from "./generate-change-logs.ts";
 import { mapChanges } from "./map_changes.ts";
 
 export async function initialize(
@@ -9,6 +9,8 @@ export async function initialize(
   nicadGranularity: string,
   nicadLang: string,
   outputPath: string,
+  minRevision: number = 0,
+  maxRevision?: number,
 ) {
   if (
     !(sourceDirectory && sourceBranchName && nicadGranularity && nicadLang &&
@@ -44,8 +46,16 @@ export async function initialize(
     nicadGranularity,
     nicadLang,
     nicadDirectory,
+    minRevision,
+    maxRevision,
   );
-  await generateChangeLogs(outputPath, gitRevisionList, sourceDirectory);
+  await generateChangeLogs(
+    outputPath,
+    gitRevisionList,
+    sourceDirectory,
+    minRevision,
+    maxRevision,
+  );
 
   await gitCheckout(sourceBranchName, sourceDirectory);
 
@@ -72,38 +82,6 @@ export async function initialize(
   console.log("Done.");
 }
 
-async function generateChangeLogs(
-  outputPath: string,
-  gitRevisionList: string[],
-  sourceDirectory: string,
-) {
-  console.log("Generating Change logs...");
-  Deno.mkdirSync(`${outputPath}/temp/changes`, { recursive: true });
-  for (let revisionId = 0; revisionId < gitRevisionList.length; revisionId++) {
-    const previousRevisionId = revisionId - 1;
-    if (previousRevisionId >= 0) {
-      const commitId = gitRevisionList[revisionId];
-      const previousCommitId = gitRevisionList[previousRevisionId];
-      console.log(
-        `Generating change log for revision ${revisionId}(${commitId}, ${previousCommitId})...`,
-      );
-      const utf8TextDecoder = new TextDecoder("utf-8");
-      const gitDiffProcess = Deno.run({
-        cmd: ["git", "diff", commitId, previousCommitId],
-        cwd: sourceDirectory,
-        stdout: "piped",
-      });
-      const gitDiffBuffer = await gitDiffProcess.output();
-      const gitDiff = utf8TextDecoder.decode(gitDiffBuffer);
-      const gitChanges = formatGitDiff(gitDiff);
-      Deno.writeTextFileSync(
-        `${outputPath}/temp/changes/${revisionId}`,
-        gitChanges,
-      );
-    }
-  }
-}
-
 async function generateNicadReports(
   outputPath: string,
   gitRevisionList: string[],
@@ -112,10 +90,12 @@ async function generateNicadReports(
   nicadGranularity: string,
   nicadLang: string,
   nicadDirectory: string,
+  minRevision: number = 0,
+  maxRevision: number = gitRevisionList.length - 1,
 ) {
   console.log("Generating NiCad reports...");
   Deno.mkdirSync(`${outputPath}/temp/reports`, { recursive: true });
-  for (let revisionId = 0; revisionId < gitRevisionList.length; revisionId++) {
+  for (let revisionId = minRevision; revisionId <= maxRevision; revisionId++) {
     const commitId = gitRevisionList[revisionId];
     console.log(`Processing revision ${revisionId}(${commitId})...`);
     const gitCheckoutProcess = Deno.run({
@@ -244,7 +224,7 @@ if (import.meta.main) {
 
   if (!args[0] || args[0].match(/(^-h$)|(^--help$)/)) {
     const helpText =
-      "Argument help: <source_directory> <source_branch_name> <nicad_granularity> <nicad_lang> <output_path>";
+      "Argument help: <source_directory> <source_branch_name> <nicad_granularity> <nicad_lang> <output_path> <min_revision?> <max_revision?>";
     console.log(helpText);
   } else {
     const [
