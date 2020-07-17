@@ -1,4 +1,4 @@
-import { copySync } from "https://deno.land/std@v0.52.0/fs/copy.ts";
+import { copySync } from "https://deno.land/std@v0.61.0/fs/copy.ts";
 import { isFileOrDirectoryExisting } from "./is-file-or-directory-existing.ts";
 import { generateChangeLogs } from "./generate-change-logs.ts";
 import { mapChanges } from "./map_changes.ts";
